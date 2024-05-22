@@ -1,0 +1,219 @@
+
+application {
+  config {
+    baseName CareShiftManager,
+    applicationType monolith,
+    authenticationType jwt,
+    packageName org.lumisoft.careshift,
+    prodDatabaseType postgresql,
+    devDatabaseType postgresql,
+    cacheProvider ehcache,
+    enableHibernateCache true,
+    buildTool gradle,
+    clientFramework react,
+    withAdminUi true,
+    enableTranslation true,
+    nativeLanguage en,
+    dtoSuffix DTO,
+    languages [en, fr, de],
+    testFrameworks [protractor],
+    enableSwaggerCodegen true,
+  }
+  entities User, Role, Permission, UserRole, RolePermission, CareHome, CareAgency, CareWorker, Shift, ShiftAssignment, SignInSignOut, Message, Payment, AuditTrail
+}
+enum UserRole {
+	CAREHOME,
+    CARE_AGENCY,
+    CARE_WORKER,
+    FINANCE,
+    ADMIN,
+    HR
+}
+enum ShiftStatus {
+    ASSIGNED, 
+    COMPLETED, 
+    CANCELLED
+}
+
+enum PaymentStatus {
+    PENDING,
+    COMPLETED
+}
+
+
+
+// Entities
+entity User {
+    id UUID,
+    username String required unique minlength(3),
+    password String required minlength(5),
+    name String,
+    email String required unique,
+    phoneNumber String,
+    createdAt Instant required,
+    updatedAt Instant required
+}
+
+entity Role {
+    id UUID,
+    name String required unique,
+    description String
+}
+
+entity Permission {
+    id UUID,
+    name String required unique,
+    description String
+}
+
+entity UserRole {
+    userId UUID required,
+    roleId UUID required
+}
+
+entity RolePermission {
+    roleId UUID required,
+    permissionId UUID required
+}
+
+entity CareHome {
+    id UUID,
+    name String required,
+    address String,
+    geolocation String,
+    createdAt Instant required,
+    updatedAt Instant required
+}
+
+entity CareAgency {
+    id UUID,
+    name String required,
+    address String,
+    createdAt Instant required,
+    updatedAt Instant required
+}
+
+entity CareWorker {
+    id UUID,
+    userId UUID required,
+    agencyId UUID,
+    certifications String,
+    createdAt Instant required,
+    updatedAt Instant required
+}
+
+entity Shift {
+    id UUID,
+    careHomeId UUID required,
+    startTime Instant required,
+    endTime Instant required,
+    tasks String,
+    notes String,
+    createdAt Instant required,
+    updatedAt Instant required
+}
+
+entity ShiftAssignment {
+    id UUID,
+    shiftId UUID required,
+    careWorkerId UUID required,
+    status ShiftStatus required,
+    createdAt Instant required,
+    updatedAt Instant required
+}
+
+entity SignInSignOut {
+    id UUID,
+    shiftAssignmentId UUID required,
+    signInTime Instant,
+    signOutTime Instant,
+    geolocation String,
+    createdAt Instant required,
+    updatedAt Instant required
+}
+
+entity Message {
+    id UUID,
+    senderId UUID required,
+    receiverId UUID required,
+    content TextBlob required,
+    sentAt Instant required
+}
+
+entity Payment {
+    id UUID,
+    amount BigDecimal required,
+    payerId UUID required,
+    payeeId UUID required,
+    status PaymentStatus required,
+    createdAt Instant required,
+    updatedAt Instant required
+}
+
+entity AuditTrail {
+    id UUID,
+    action String required,
+    entity String required,
+    entityId UUID required,
+    performedBy UUID required,
+    timestamp Instant required
+}
+
+// Relationships
+relationship ManyToMany {
+    User{role(name)} to Role{user(username)}
+}
+
+relationship ManyToMany {
+    Role{permission(name)} to Permission{role(name)}
+}
+
+relationship ManyToOne {
+    CareWorker{user(username)} to User
+    CareWorker{agency(name)} to CareAgency
+}
+
+relationship ManyToOne {
+    Shift{careHome(name)} to CareHome
+}
+
+relationship ManyToOne {
+    ShiftAssignment{shift(startTime)} to Shift
+    ShiftAssignment{careWorker(name)} to CareWorker
+}
+
+relationship ManyToOne {
+    SignInSignOut{shiftAssignment(status)} to ShiftAssignment
+}
+
+relationship ManyToOne {
+    Message{sender(username)} to User
+    Message{receiver(username)} to User
+}
+
+relationship ManyToOne {
+    Payment{payer(username)} to User
+    Payment{payee(username)} to User
+}
+
+relationship ManyToOne {
+    AuditTrail{performedBy(username)} to User
+}
+
+
+// Additional settings
+paginate User with pagination
+paginate Role with pagination
+paginate Permission with pagination
+paginate CareHome with pagination
+paginate CareAgency with pagination
+paginate CareWorker with pagination
+paginate Shift with pagination
+paginate ShiftAssignment with pagination
+paginate SignInSignOut with pagination
+paginate Message with pagination
+paginate Payment with pagination
+paginate AuditTrail with pagination
+
+dto * with mapstruct
+service all with serviceImpl
